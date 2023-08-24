@@ -16,7 +16,7 @@ import (
 // NewHTTPServer new a HTTP server.
 func NewHTTPServer(c *conf.Server, logger log.Logger) *http.Server {
 	router := mux.NewRouter()
-	handleFunc = websocket.DefaultServer.Accept(handler.WsHandler)
+	handleFunc = websocket.DefaultServer.Handler(handler.WsHandler)
 	router.HandleFunc("/ws", handleFunc)
 	opts := []http.ServerOption{
 		http.Middleware(

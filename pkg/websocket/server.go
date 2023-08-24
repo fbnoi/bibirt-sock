@@ -6,6 +6,7 @@ import (
 
 	"github.com/gofrs/uuid"
 	"github.com/gorilla/websocket"
+	"github.com/pkg/errors"
 )
 
 var DefaultServer = &Server{
@@ -36,7 +37,7 @@ type Server struct {
 	clients map[string]*Client
 }
 
-func (srv *Server) Accept(fn func(*Client)) func(http.ResponseWriter, *http.Request) {
+func (srv *Server) Handler(fn func(*Client)) func(http.ResponseWriter, *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
 		c, err := srv.upgrader.Upgrade(w, r, nil)
 		if err != nil {
@@ -62,4 +63,12 @@ func (srv *Server) Accept(fn func(*Client)) func(http.ResponseWriter, *http.Requ
 			}
 		}
 	}
+}
+
+func (srv *Server) SendToClient(id string, mt int, message []byte) error {
+	if client, ok := srv.clients[id]; ok {
+		return client.Send(mt, message)
+	}
+
+	return errors.Errorf("websocket.SendToClient: client %s not found", id)
 }

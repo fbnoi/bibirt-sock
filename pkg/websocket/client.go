@@ -20,6 +20,10 @@ func (c *Client) Send(mt int, message []byte) error {
 	return c.conn.WriteMessage(mt, message)
 }
 
+func (c *Client) SendToClient(id string, mt int, message []byte) error {
+	return c.srv.SendToClient(id, mt, message)
+}
+
 func (c *Client) ID() string {
 	return c.id
 }
