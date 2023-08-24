@@ -8,8 +8,26 @@ import (
 	"github.com/gorilla/websocket"
 )
 
-func NewServer() *Server {
+var DefaultServer = &Server{
+	upgrader: websocket.Upgrader{
+		HandshakeTimeout:  default_config.HandshakeTimeout,
+		ReadBufferSize:    default_config.ReadBufferSize,
+		WriteBufferSize:   default_config.WriteBufferSize,
+		EnableCompression: default_config.EnableCompression,
+	},
+	clients: make(map[string]*Client),
+}
 
+func NewServer(conf *Config) *Server {
+	return &Server{
+		upgrader: websocket.Upgrader{
+			HandshakeTimeout:  conf.HandshakeTimeout,
+			ReadBufferSize:    conf.ReadBufferSize,
+			WriteBufferSize:   conf.WriteBufferSize,
+			EnableCompression: conf.EnableCompression,
+		},
+		clients: make(map[string]*Client),
+	}
 }
 
 type Server struct {

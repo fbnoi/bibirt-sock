@@ -16,6 +16,10 @@ type Client struct {
 	receiveErrorHandler func(error)
 }
 
+func (c *Client) Send(mt int, message []byte) error {
+	return c.conn.WriteMessage(mt, message)
+}
+
 func (c *Client) ID() string {
 	return c.id
 }
