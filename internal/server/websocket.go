@@ -1,6 +1,7 @@
 package server
 
 import (
+	"bibirt-sock/internal/biz"
 	"bibirt-sock/internal/conf"
 	"bibirt-sock/pkg/websocket"
 
@@ -14,9 +15,9 @@ import (
 )
 
 // NewHTTPServer new a HTTP server.
-func NewHTTPServer(c *conf.Server, logger log.Logger) *http.Server {
+func NewHTTPServer(c *conf.Server, logger log.Logger, handler *biz.Handler) *http.Server {
 	router := mux.NewRouter()
-	handleFunc = websocket.DefaultServer.Handler(handler.WsHandler)
+	handleFunc := websocket.DefaultServer.Handler(handler.Handle)
 	router.HandleFunc("/ws", handleFunc)
 	opts := []http.ServerOption{
 		http.Middleware(

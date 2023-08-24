@@ -1,7 +1,18 @@
 package websocket
 
 import (
+	"time"
+
 	"github.com/gorilla/websocket"
+)
+
+type Color int
+
+const (
+	Green  = Color(1)
+	Blue   = Color(2)
+	Yellow = Color(3)
+	Red    = Color(4)
 )
 
 type Client struct {
@@ -9,11 +20,14 @@ type Client struct {
 	srv  *Server
 	conn *websocket.Conn
 
-	connectedHandler    func()
-	messageHandler      func(bs []byte)
-	closingHandler      func()
-	closedHandler       func()
-	receiveErrorHandler func(error)
+	LastPingAt time.Time
+	Color      Color
+
+	connectedHandler func()
+	messageHandler   func(bs []byte)
+	closingHandler   func()
+	closedHandler    func()
+	handleError      func(error)
 }
 
 func (c *Client) Send(mt int, message []byte) error {
@@ -48,12 +62,13 @@ func (c *Client) OnClosed(fn func()) {
 	c.closedHandler = fn
 }
 
-func (c *Client) OnReceiveError(fn func(error)) {
-	c.receiveErrorHandler = fn
+func (c *Client) OnError(fn func(error)) {
+	c.handleError = fn
 }
 
 func (c *Client) Close() {
 	c.closingHandler()
 	c.conn.Close()
+	delete(c.srv.clients, c.id)
 	c.closedHandler()
 }
