@@ -3,6 +3,7 @@ package server
 import (
 	"bibirt-sock/internal/biz"
 	"bibirt-sock/internal/conf"
+	"bibirt-sock/internal/middleware"
 	"bibirt-sock/pkg/websocket"
 
 	"github.com/go-kratos/kratos/v2/log"
@@ -21,11 +22,13 @@ func NewHTTPServer(c *conf.Server, logger log.Logger, handler *biz.Handler) *htt
 		http.Middleware(
 			recovery.Recovery(),
 			tracing.Server(),
+			middleware.Auth(),
 		),
 		http.Address(":8080"),
 	}
 
 	httpSrv := http.NewServer(opts...)
+	httpSrv.Route()
 	httpSrv.HandlePrefix("/", router)
 
 	return httpSrv
