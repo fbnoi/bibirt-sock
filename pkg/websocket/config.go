@@ -7,6 +7,7 @@ var default_config = &Config{
 	ReadBufferSize:    1024,
 	WriteBufferSize:   1024,
 	EnableCompression: false,
+	PingInterval:      0,
 }
 
 type Config struct {
@@ -14,4 +15,5 @@ type Config struct {
 	ReadBufferSize    int
 	WriteBufferSize   int
 	EnableCompression bool
+	PingInterval      time.Duration
 }

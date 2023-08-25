@@ -9,11 +9,9 @@ ifeq ($(GOHOSTOS), windows)
 	#Git_Bash= $(subst cmd\,bin\bash.exe,$(dir $(shell where git)))
 	Git_Bash=$(subst \,/,$(subst cmd\,bin\bash.exe,$(dir $(shell where git))))
 	INTERNAL_PROTO_FILES=$(shell $(Git_Bash) -c "find internal -name *.proto")
-	PKG_PROTO_FILES=$(shell $(Git_Bash) -c "find pkg -name *.proto")
 	API_PROTO_FILES=$(shell $(Git_Bash) -c "find api -name *.proto")
 else
 	INTERNAL_PROTO_FILES=$(shell find internal -name *.proto)
-	PKG_PROTO_FILES=$(shell find pkg -name *.proto)
 	API_PROTO_FILES=$(shell find api -name *.proto)
 endif
 
@@ -27,18 +25,12 @@ init:
 	go install github.com/google/gnostic/cmd/protoc-gen-openapi@latest
 	go install github.com/google/wire/cmd/wire@latest
 
-.PHONY: pkg
-# generate pkg proto
-pkg:
-	protoc --proto_path=./pkg \
-	       --go_out=paths=source_relative:./pkg \
-		   $(PKG_PROTO_FILES)
-
-.PHONY: config
+.PHONY: internal
 # generate internal proto
-config:
+internal:
 	protoc --proto_path=./internal \
 	       --proto_path=./third_party \
+		   --proto_path=./pkg \
  	       --go_out=paths=source_relative:./internal \
 	       $(INTERNAL_PROTO_FILES)
 
@@ -47,6 +39,7 @@ config:
 api:
 	protoc --proto_path=./api \
 	       --proto_path=./third_party \
+		   --proto_path=./pkg \
  	       --go_out=paths=source_relative:./api \
  	       --go-http_out=paths=source_relative:./api \
  	       --go-grpc_out=paths=source_relative:./api \
@@ -69,7 +62,8 @@ generate:
 # generate all
 all:
 	make api;
-	make config;
+	make internal;
+	make message;
 	make generate;
 
 # show help

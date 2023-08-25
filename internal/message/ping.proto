@@ -1,0 +1,11 @@
+syntax = "proto3";
+package kratos.api;
+
+option go_package = "bibirt-sock/internal/message;message";
+
+import "google/protobuf/timestamp.proto";
+
+message Ping {
+    google.protobuf.Timestamp upTimestamp = 1;
+    google.protobuf.Timestamp downTimestamp = 2;
+}

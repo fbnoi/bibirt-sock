@@ -2,40 +2,90 @@ package biz
 
 import (
 	"bibirt-sock/pkg/websocket"
+	"fmt"
 	"sync"
-	"time"
 
-	"github.com/go-co-op/gocron"
+	"github.com/go-kratos/kratos/v2/errors"
+	"github.com/go-kratos/kratos/v2/log"
+	"google.golang.org/protobuf/proto"
+	"google.golang.org/protobuf/types/known/anypb"
 )
 
-var (
-	healthyScanScheduler = gocron.NewScheduler(time.UTC)
-	schedulerOnce        = sync.Once{}
-)
+const BS_MESSAGE_TYPE = 2
+
+var anyPool = &sync.Pool{
+	New: func() any {
+		return &anypb.Any{}
+	},
+}
 
 type Handler struct {
+	clients map[string]*websocket.Client
 }
 
-func (h *Handler) Handle(client *websocket.Client) {
-	// client.OnClosed()
-	// client.OnClosing()
-	client.OnConnected(func() { (monitorHealth(client)) })
-	// client.OnError()
-	client.OnMessage(func(b []byte) {})
+func (h *Handler) RegisterHandler(client *websocket.Client) {
+	client.OnMessage(h.dispatch(client))
 }
 
-func monitorHealth(client *websocket.Client) {
-	healthyScanScheduler.Every(1).Second().Do(func() {
-		checkHealth(client)
-	})
+func (h *Handler) SendToClient(client *websocket.Client, m proto.Message) error {
+	return h.doSend(client, m)
 }
 
-func checkHealth(client *websocket.Client) {
-	if client.LastPingAt.Add(2 * time.Second).Before(time.Now()) {
-		client.Color += 1
+func (h *Handler) SendToClientByUUID(id string, m proto.Message) error {
+	if client, ok := h.clients[id]; ok {
+		return h.doSend(client, m)
+	}
+	return errors.NotFound(fmt.Sprintf("biz.Handler.SendToClientByUUID: client %s not found", id), "client not found")
+}
+
+func (h *Handler) SendToClients(m proto.Message, ids ...string) {
+	var clients []*websocket.Client
+	for _, id := range ids {
+		if client, ok := h.clients[id]; ok {
+			clients = append(clients, client)
+		}
+	}
+	for _, client := range clients {
+		h.doSend(client, m)
+	}
+}
+
+func (h *Handler) dispatch(client *websocket.Client) func(bs []byte) {
+	return func(bs []byte) {
+		a := getAny()
+		defer putAny(a)
+		if err := proto.Unmarshal(bs, a); err != nil {
+			log.Error(err)
+			return
+		}
+		switch a.TypeUrl {
+		case ping_type_url:
+			h.handlePing(client, a)
+		}
+	}
+}
+
+func (h *Handler) doSend(client *websocket.Client, m proto.Message) error {
+	a := getAny()
+	defer putAny(a)
+	err := a.MarshalFrom(m)
+	if err != nil {
+		return err
+	}
+	bs, err := proto.Marshal(a)
+	if err != nil {
+		return err
 	}
 
-	if client.Color == Red {
-		client.Close()
-	}
+	return client.Send(BS_MESSAGE_TYPE, bs)
+}
+
+func getAny() *anypb.Any {
+	a := anyPool.Get().(*anypb.Any)
+	a.Reset()
+	return a
+}
+
+func putAny(a *anypb.Any) {
+	anyPool.Put(a)
 }

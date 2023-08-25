@@ -17,7 +17,8 @@ var DefaultServer = &Server{
 		WriteBufferSize:   default_config.WriteBufferSize,
 		EnableCompression: default_config.EnableCompression,
 	},
-	clients: make(map[string]*Client),
+	clients:      make(map[string]*Client),
+	pingInterval: default_config.PingInterval,
 }
 
 func NewServer(conf *Config) *Server {
@@ -38,6 +39,12 @@ type Server struct {
 
 	clients   map[string]*Client
 	scheduler *gocron.Scheduler
+
+	pingInterval time.Duration
+}
+
+func (srv *Server) Bootstrap() {
+	srv.checkScheduler()
 }
 
 func (srv *Server) Handler(fn func(*Client)) func(http.ResponseWriter, *http.Request) {
@@ -75,6 +82,12 @@ func (srv *Server) SendToClient(id string, mt int, message []byte) error {
 	}
 
 	return errors.Errorf("websocket.SendToClient: client %s not found", id)
+}
+
+func (srv *Server) checkScheduler() {
+	if srv.pingInterval > 0 {
+		srv.scheduler.StartAsync()
+	}
 }
 
 func (srv *Server) monitorHealth(client *Client) {

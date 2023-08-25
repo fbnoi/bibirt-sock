@@ -6,10 +6,8 @@ import (
 	"bibirt-sock/pkg/websocket"
 
 	"github.com/go-kratos/kratos/v2/log"
-	"github.com/go-kratos/kratos/v2/middleware/logging"
 	"github.com/go-kratos/kratos/v2/middleware/recovery"
 	"github.com/go-kratos/kratos/v2/middleware/tracing"
-	"github.com/go-kratos/kratos/v2/middleware/validate"
 	"github.com/go-kratos/kratos/v2/transport/http"
 	"github.com/gorilla/mux"
 )
@@ -17,14 +15,12 @@ import (
 // NewHTTPServer new a HTTP server.
 func NewHTTPServer(c *conf.Server, logger log.Logger, handler *biz.Handler) *http.Server {
 	router := mux.NewRouter()
-	handleFunc := websocket.DefaultServer.Handler(handler.Handle)
+	handleFunc := websocket.DefaultServer.Handler(handler.RegisterHandler)
 	router.HandleFunc("/ws", handleFunc)
 	opts := []http.ServerOption{
 		http.Middleware(
 			recovery.Recovery(),
 			tracing.Server(),
-			logging.Server(logger),
-			validate.Validator(),
 		),
 		http.Address(":8080"),
 	}
