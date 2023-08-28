@@ -6,13 +6,8 @@ import (
 	"log"
 	"time"
 
-	"github.com/go-co-op/gocron"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/timestamppb"
-)
-
-var (
-	scheduler = gocron.NewScheduler(time.UTC)
 )
 
 func HandlePing(client *websocket.Client) {
@@ -33,7 +28,7 @@ func HandlePing(client *websocket.Client) {
 }
 
 func MonitorHealth(client *websocket.Client) {
-	scheduler.TagsUnique()
+
 	scheduler.Every(1).Second().Tag(client.ID()).Do(func() {
 		if client.LastPingAt.Add(2 * time.Second).Before(time.Now()) {
 			client.Color += 1
