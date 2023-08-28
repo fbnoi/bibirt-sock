@@ -1,25 +1,46 @@
 package biz
 
 import (
-	"bibirt-sock/internal/message"
-	"bibirt-sock/pkg/websocket"
+	"flynoob/bibirt-sock/internal/message"
+	"flynoob/bibirt-sock/pkg/websocket"
+	"log"
 	"time"
 
-	"github.com/go-kratos/kratos/v2/log"
+	"github.com/go-co-op/gocron"
 	"google.golang.org/protobuf/proto"
-	timestamppb "google.golang.org/protobuf/types/known/timestamppb"
+	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
-var ping_type_url = message.TypeUrl(&message.Ping{})
+var (
+	scheduler = gocron.NewScheduler(time.UTC)
+)
 
-func (h *Handler) handlePing(client *websocket.Client, m proto.Message) {
-	ping, ok := m.(*message.Ping)
-	if !ok {
-		return
-	}
-	client.LastPingAt = time.Now()
-	ping.DownTimestamp = timestamppb.New(client.LastPingAt)
-	if err := h.SendToClient(client, ping); err != nil {
-		log.Errorf("biz.handlePing error: %s", err)
-	}
+func HandlePing(client *websocket.Client) {
+	ping := &message.Ping{}
+	websocket.RegisterMessage(ping)
+	client.Subscribe(ping, func(m proto.Message) {
+		client.Color = websocket.Green
+		ping, ok := m.(*message.Ping)
+		if !ok {
+			return
+		}
+		client.LastPingAt = time.Now()
+		ping.DownTimestamp = timestamppb.New(client.LastPingAt)
+		if err := client.Send(ping); err != nil {
+			log.Printf("biz.HandlePing error: %s", err)
+		}
+	})
+}
+
+func MonitorHealth(client *websocket.Client) {
+	scheduler.TagsUnique()
+	scheduler.Every(1).Second().Tag(client.ID()).Do(func() {
+		if client.LastPingAt.Add(2 * time.Second).Before(time.Now()) {
+			client.Color += 1
+		}
+		if client.Color == websocket.Red {
+			client.Close()
+		}
+		scheduler.RemoveByTag(client.ID())
+	})
 }

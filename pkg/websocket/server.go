@@ -1,119 +1,86 @@
 package websocket
 
 import (
+	"flag"
+	"log"
 	"net/http"
 	"time"
 
-	"github.com/go-co-op/gocron"
-	"github.com/gofrs/uuid"
 	"github.com/gorilla/websocket"
 	"github.com/pkg/errors"
 )
 
-var DefaultServer = &Server{
-	upgrader: websocket.Upgrader{
-		HandshakeTimeout:  default_config.HandshakeTimeout,
-		ReadBufferSize:    default_config.ReadBufferSize,
-		WriteBufferSize:   default_config.WriteBufferSize,
-		EnableCompression: default_config.EnableCompression,
-	},
-	clients:      make(map[string]*Client),
-	pingInterval: default_config.PingInterval,
+var (
+	endpoint           string
+	addr               string
+	handleShakeTimeout int64
+	readBufferSize     int
+	writeBufferSize    int
+	enableCompression  bool
+)
+
+func addFlag() {
+	flag.StringVar(&endpoint, "endpoint", "HZ-WH-1", "set endpoint name for server")
+	flag.StringVar(&addr, "addr", ":5678", "set addr for server")
+	flag.Int64Var(&handleShakeTimeout, "timeout", 3000, "set connection timeout")
+	flag.IntVar(&readBufferSize, "read_buffer_size", 0, "set read buffer size")
+	flag.IntVar(&writeBufferSize, "write_buffer_size", 0, "set write buffer size")
+	flag.BoolVar(&enableCompression, "enable_compression", false, "enable message compression")
 }
 
-func NewServer(conf *Config) *Server {
+func NewServer() *Server {
+	addFlag()
 	return &Server{
 		upgrader: websocket.Upgrader{
-			HandshakeTimeout:  conf.HandshakeTimeout,
-			ReadBufferSize:    conf.ReadBufferSize,
-			WriteBufferSize:   conf.WriteBufferSize,
-			EnableCompression: conf.EnableCompression,
+			HandshakeTimeout:  time.Millisecond * time.Duration(handleShakeTimeout),
+			ReadBufferSize:    readBufferSize,
+			WriteBufferSize:   writeBufferSize,
+			EnableCompression: enableCompression,
+			CheckOrigin: func(*http.Request) bool {
+				return true
+			},
 		},
-		clients:   make(map[string]*Client),
-		scheduler: gocron.NewScheduler(time.UTC),
+		endpoint:    endpoint,
+		addr:        addr,
+		bus:         NewBus(),
+		handleError: func(c *Client, b []byte, err error) {},
 	}
 }
 
 type Server struct {
+	bus      Bus
+	addr     string
 	upgrader websocket.Upgrader
+	endpoint string
 
-	clients   map[string]*Client
-	scheduler *gocron.Scheduler
-
-	pingInterval time.Duration
+	handleError         func(*Client, []byte, error)
+	newClientHandleFunc func(*Client)
 }
 
-func (srv *Server) Bootstrap() {
-	srv.checkScheduler()
+func (s *Server) Endpoint() string {
+	return s.endpoint
 }
 
-func (srv *Server) Handler(fn func(*Client)) func(http.ResponseWriter, *http.Request) {
-	return func(w http.ResponseWriter, r *http.Request) {
-		c, err := srv.upgrader.Upgrade(w, r, nil)
-		client := srv.newClient(c)
-		fn(client)
-		if err != nil {
-			client.handleError(err)
-			delete(srv.clients, client.id)
-			return
-		}
-		defer client.Close()
-		client.connectedHandler()
-		srv.monitorHealth(client)
-		for {
-			mt, message, err := c.ReadMessage()
-			if err != nil {
-				client.handleError(err)
-			}
-			switch mt {
-			case websocket.PingMessage, websocket.PongMessage:
-			case websocket.TextMessage, websocket.BinaryMessage:
-				client.Receive(message)
-			case websocket.CloseMessage:
-				return
-			}
-		}
-	}
-}
-
-func (srv *Server) SendToClient(id string, mt int, message []byte) error {
-	if client, ok := srv.clients[id]; ok {
-		return client.Send(mt, message)
-	}
-
-	return errors.Errorf("websocket.SendToClient: client %s not found", id)
-}
-
-func (srv *Server) checkScheduler() {
-	if srv.pingInterval > 0 {
-		srv.scheduler.StartAsync()
-	}
-}
-
-func (srv *Server) monitorHealth(client *Client) {
-	srv.scheduler.Every(1).Second().Do(func() {
-		if client.LastPingAt.Add(2 * time.Second).Before(time.Now()) {
-			client.Color += 1
-		}
-
-		if client.Color == Red {
-			client.Close()
-		}
+func (s *Server) Run() error {
+	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+		defer recovery()
+		client := NewClient(s, w, r)
+		s.newClientHandleFunc(client)
 	})
+	return http.ListenAndServe(s.addr, nil)
 }
 
-func (srv *Server) newClient(c *websocket.Conn) *Client {
-	uuid4 := uuid.Must(uuid.NewV4())
-	client := &Client{
-		id:             uuid4.String(),
-		srv:            srv,
-		conn:           c,
-		Color:          Green,
-		messageHandler: func(bs []byte) {},
-		closingHandler: func() {},
-		closedHandler:  func() {},
-		handleError:    func(error) {},
+func (s *Server) OnNewConnection(fn func(*Client)) {
+	s.newClientHandleFunc = fn
+}
+
+func (s *Server) Listen(addr string) error {
+	s.addr = addr
+	return s.Run()
+}
+
+func recovery() {
+	if message := recover(); message != nil {
+		log.Println(errors.Errorf("Websocket error: %v", message))
 	}
-	srv.clients[uuid4.String()] = client
-	return client
 }
