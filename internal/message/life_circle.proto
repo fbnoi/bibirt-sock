@@ -1,7 +1,7 @@
 syntax = "proto3";
 package sock.message;
 
-option go_package = "bibirt-sock/internal/message;message";
+option go_package = "flynoob/bibirt-sock/internal/message;message";
 
 import "google/protobuf/timestamp.proto";
 

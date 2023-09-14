@@ -1,0 +1,7 @@
+server:
+  addr: 0.0.0.0:8000
+  api:
+    addr:
+    app_id:
+    app_secret:
+

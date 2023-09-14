@@ -1,0 +1,16 @@
+syntax = "proto3";
+
+package api.v1;
+
+option go_package = "flynoob/bibirt-sock/api;api";
+
+service Auth {
+	rpc ConnUUID (ConnUUIDRequest) returns (ConnUUIDReply) {};
+}
+
+message ConnUUIDRequest {
+	string token = 1;
+}
+message ConnUUIDReply {
+	string uuid = 1;
+}
