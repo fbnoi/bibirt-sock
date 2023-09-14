@@ -70,6 +70,7 @@ type Client struct {
 	sync.RWMutex
 
 	beforeUpgradeHandleFunc func(*Client) error
+	closeHandler            func(*Client)
 
 	Writer http.ResponseWriter
 	Req    *http.Request
@@ -87,6 +88,10 @@ func (c *Client) Upgrade() bool {
 
 func (c *Client) OnUpgrade(fn func(*Client) error) {
 	c.beforeUpgradeHandleFunc = fn
+}
+
+func (c *Client) OnClose(fn func(*Client)) {
+	c.closeHandler = fn
 }
 
 func (c *Client) Loop() {
