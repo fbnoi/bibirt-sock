@@ -44,12 +44,11 @@ func putAny(a *anypb.Any) {
 	anyFactory.Put(a)
 }
 
-func NewClient(server *Server, w http.ResponseWriter, r *http.Request) *Client {
+func NewClient(w http.ResponseWriter, r *http.Request) *Client {
 	return &Client{
 		Bus:    NewBus(),
 		conn:   nil,
 		Color:  Red,
-		server: server,
 		status: Init,
 		Writer: w,
 		Req:    r,
@@ -62,39 +61,23 @@ type Client struct {
 	conn    *websocket.Conn
 	session map[string]any
 	status  SocketStatus
-	server  *Server
 
 	LastPingAt time.Time
 	Color      Color
 
 	sync.RWMutex
 
-	beforeUpgradeHandleFunc func(*Client) error
-	closeHandler            func(*Client)
-
 	Writer http.ResponseWriter
 	Req    *http.Request
 }
 
-func (c *Client) Upgrade() bool {
-	var err error
-	if err = c.beforeUpgradeHandleFunc(c); err != nil {
-		return false
-	}
-	c.conn, err = c.server.upgrader.Upgrade(c.Writer, c.Req, nil)
+func (c *Client) Upgrade(upgrader websocket.Upgrader) (err error) {
+	c.conn, err = upgrader.Upgrade(c.Writer, c.Req, nil)
 
-	return err == nil
+	return
 }
 
-func (c *Client) OnUpgrade(fn func(*Client) error) {
-	c.beforeUpgradeHandleFunc = fn
-}
-
-func (c *Client) OnClose(fn func(*Client)) {
-	c.closeHandler = fn
-}
-
-func (c *Client) Loop() {
+func (c *Client) Listen() {
 	for {
 		if c.Status() != Connected {
 			return

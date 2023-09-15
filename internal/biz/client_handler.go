@@ -14,7 +14,7 @@ type AuthService interface {
 	ConnUUID(string) (string, error)
 }
 
-type ConnUseCase struct {
+type ClientHandler struct {
 	clients   map[string]*websocket.Client
 	scheduler *gocron.Scheduler
 
@@ -25,47 +25,47 @@ type ConnUseCase struct {
 	log *log.Helper
 }
 
-func NewConnUseCase(authService AuthService, logger log.Logger) *ConnUseCase {
-	useCase := &ConnUseCase{
+func NewClientHandler(authService AuthService, logger log.Logger) *ClientHandler {
+	handler := &ClientHandler{
 		clients:     make(map[string]*websocket.Client),
 		scheduler:   gocron.NewScheduler(time.UTC),
 		mux:         sync.RWMutex{},
 		authService: authService,
 		log:         log.NewHelper(logger),
 	}
-	useCase.scheduler.TagsUnique()
-	useCase.scheduler.StartAsync()
-	useCase.registerMessage()
+	handler.scheduler.TagsUnique()
+	handler.scheduler.StartAsync()
+	handler.registerMessage()
 
-	return useCase
+	return handler
 }
 
-func (useCase *ConnUseCase) HandleClient(c *websocket.Client) {
-	useCase.Auth(c)
+func (handler *ClientHandler) HandleClient(c *websocket.Client) {
+	handler.Auth(c)
 	if c.Upgrade() {
-		useCase.handleClientConnected(c)
-		useCase.handleClientDisconnected(c)
-		useCase.registerMessageHandler(c)
+		handler.handleClientConnected(c)
+		handler.handleClientDisconnected(c)
+		handler.registerMessageHandler(c)
 
 		defer c.Close()
 		c.Loop()
 	}
 }
 
-func (useCase *ConnUseCase) handleClientDisconnected(c *websocket.Client) {
+func (handler *ClientHandler) handleClientDisconnected(c *websocket.Client) {
 	c.OnClose(func(c *websocket.Client) {
-		useCase.mux.Lock()
-		defer useCase.mux.Unlock()
+		handler.mux.Lock()
+		defer handler.mux.Unlock()
 
 		c.Publish(&message.Disconnected{Id: c.ID()})
-		delete(useCase.clients, c.ID())
+		delete(handler.clients, c.ID())
 	})
 }
 
-func (useCase *ConnUseCase) handleClientConnected(c *websocket.Client) {
-	useCase.mux.Lock()
-	defer useCase.mux.Unlock()
+func (handler *ClientHandler) handleClientConnected(c *websocket.Client) {
+	handler.mux.Lock()
+	defer handler.mux.Unlock()
 
-	useCase.clients[c.ID()] = c
+	handler.clients[c.ID()] = c
 	c.Publish(&message.Connected{Id: c.ID()})
 }

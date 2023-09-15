@@ -24,9 +24,9 @@ import (
 // wireApp init kratos application.
 func wireApp(confServer *conf.Server, logger log.Logger) (*kratos.App, func(), error) {
 	authService := service.NewAuthService(confServer)
-	connUseCase := biz.NewConnUseCase(authService, logger)
-	websocketServer := server.NewServer(connUseCase)
-	app := newApp(logger, websocketServer)
+	clientHandler := biz.NewClientHandler(authService, logger)
+	httpServer := server.NewServer(clientHandler)
+	app := newApp(logger, httpServer)
 	return app, func() {
 	}, nil
 }

@@ -9,20 +9,20 @@ import (
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
-func (useCase *ConnUseCase) MonitorHealth(client *websocket.Client) {
-	useCase.handlePing(client)
-	useCase.scheduler.Every(1).Second().Tag(client.ID()).Do(func() {
+func (handler *ClientHandler) monitorHealth(client *websocket.Client) {
+	handler.handlePing(client)
+	handler.scheduler.Every(1).Second().Tag(client.ID()).Do(func() {
 		if client.LastPingAt.Add(2 * time.Second).Before(time.Now()) {
 			client.Color += 1
 		}
 		if client.Color == websocket.Red {
 			client.Close()
-			useCase.scheduler.RemoveByTag(client.ID())
+			handler.scheduler.RemoveByTag(client.ID())
 		}
 	})
 }
 
-func (useCase *ConnUseCase) handlePing(client *websocket.Client) {
+func (handler *ClientHandler) handlePing(client *websocket.Client) {
 	ping := &message.Ping{}
 	client.Subscribe(ping, func(m proto.Message) {
 		client.Color = websocket.Green
@@ -33,7 +33,7 @@ func (useCase *ConnUseCase) handlePing(client *websocket.Client) {
 		client.LastPingAt = time.Now()
 		ping.DownTimestamp = timestamppb.New(client.LastPingAt)
 		if err := client.Send(ping); err != nil {
-			useCase.log.Errorf("biz.HandlePing error: %s", err)
+			handler.log.Errorf("biz.HandlePing error: %s", err)
 		}
 	})
 }

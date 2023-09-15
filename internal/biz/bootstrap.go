@@ -5,12 +5,12 @@ import (
 	"flynoob/bibirt-sock/pkg/websocket"
 )
 
-func (*ConnUseCase) registerMessage() {
+func (*ClientHandler) registerMessage() {
 	websocket.RegisterMessage(&message.Ping{})
 	websocket.RegisterMessage(&message.Connected{})
 	websocket.RegisterMessage(&message.Disconnected{})
 }
 
-func (useCase *ConnUseCase) registerMessageHandler(c *websocket.Client) {
-	useCase.MonitorHealth(c)
+func (handler *ClientHandler) registerMessageHandler(c *websocket.Client) {
+	handler.monitorHealth(c)
 }
