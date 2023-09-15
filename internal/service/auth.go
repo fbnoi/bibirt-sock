@@ -10,13 +10,19 @@ import (
 	"github.com/go-kratos/kratos/v2/transport/grpc"
 )
 
-func NewAuthService(c *conf.Server) *AuthService {
+type AuthService struct {
+	client api.AuthClient
+}
 
+func NewAuthService(c *conf.Server) *AuthService {
+	md := metadata.New()
+	md.Add("x-md-global-app-id", c.Api.AppId)
+	md.Add("x-md-global-app-secret", c.Api.AppSecret)
 	cc, err := grpc.Dial(
 		context.Background(),
 		grpc.WithEndpoint(c.Api.Addr),
 		grpc.WithMiddleware(
-			mmd.Client(),
+			mmd.Client(mmd.WithConstants(md)),
 		),
 	)
 	if err != nil {
@@ -24,14 +30,11 @@ func NewAuthService(c *conf.Server) *AuthService {
 	}
 	client := api.NewAuthClient(cc)
 
-	return &AuthService{client, c.Api.AppId, c.Api.AppSecret}
+	return &AuthService{client}
 }
 
 func (s AuthService) ConnUUID(tokStr string) (string, error) {
-	ctx := context.Background()
-	ctx = metadata.AppendToClientContext(ctx, "x-md-global-app-id", s.appId)
-	ctx = metadata.AppendToClientContext(ctx, "x-md-global-app-secret", s.appSecret)
-	reply, err := s.client.ConnUUID(ctx, &api.ConnUUIDRequest{Token: tokStr})
+	reply, err := s.client.ConnUUID(context.Background(), &api.ConnUUIDRequest{Token: tokStr})
 	if err != nil {
 		return "", err
 	}

@@ -3,7 +3,6 @@ package biz
 import (
 	"flynoob/bibirt-sock/internal/message"
 	"flynoob/bibirt-sock/pkg/websocket"
-	"log"
 	"time"
 
 	"google.golang.org/protobuf/proto"
@@ -23,7 +22,7 @@ func (useCase *ConnUseCase) MonitorHealth(client *websocket.Client) {
 	})
 }
 
-func (*ConnUseCase) handlePing(client *websocket.Client) {
+func (useCase *ConnUseCase) handlePing(client *websocket.Client) {
 	ping := &message.Ping{}
 	client.Subscribe(ping, func(m proto.Message) {
 		client.Color = websocket.Green
@@ -34,7 +33,7 @@ func (*ConnUseCase) handlePing(client *websocket.Client) {
 		client.LastPingAt = time.Now()
 		ping.DownTimestamp = timestamppb.New(client.LastPingAt)
 		if err := client.Send(ping); err != nil {
-			log.Printf("biz.HandlePing error: %s", err)
+			useCase.log.Errorf("biz.HandlePing error: %s", err)
 		}
 	})
 }

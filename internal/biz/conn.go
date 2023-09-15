@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/go-co-op/gocron"
+	"github.com/go-kratos/kratos/v2/log"
 )
 
 type AuthServiceInterface interface {
@@ -20,14 +21,17 @@ type ConnUseCase struct {
 	authService AuthServiceInterface
 
 	mux sync.RWMutex
+
+	log *log.Helper
 }
 
-func NewConnUseCase(authService AuthServiceInterface) *ConnUseCase {
+func NewConnUseCase(authService AuthServiceInterface, logger log.Logger) *ConnUseCase {
 	useCase := &ConnUseCase{
 		clients:     make(map[string]*websocket.Client),
 		scheduler:   gocron.NewScheduler(time.UTC),
 		mux:         sync.RWMutex{},
 		authService: authService,
+		log:         log.NewHelper(logger),
 	}
 	useCase.scheduler.TagsUnique()
 	useCase.scheduler.StartAsync()

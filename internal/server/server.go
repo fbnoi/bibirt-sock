@@ -1,12 +1,5 @@
 package server
 
-import (
-	"flynoob/bibirt-sock/internal/biz"
-	"flynoob/bibirt-sock/pkg/websocket"
-)
+import "github.com/google/wire"
 
-func NewServer(useCase *biz.ConnUseCase) *websocket.Server {
-	srv := websocket.NewServer()
-	srv.OnNewConnection(useCase.HandleClient)
-	return srv
-}
+var ProviderSet = wire.NewSet(NewServer)
