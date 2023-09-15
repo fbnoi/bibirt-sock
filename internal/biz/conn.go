@@ -10,22 +10,22 @@ import (
 	"github.com/go-kratos/kratos/v2/log"
 )
 
-type AuthServiceInterface interface {
-	ConnUUID(tokStr string) (string, error)
+type AuthService interface {
+	ConnUUID(string) (string, error)
 }
 
 type ConnUseCase struct {
 	clients   map[string]*websocket.Client
 	scheduler *gocron.Scheduler
 
-	authService AuthServiceInterface
+	authService AuthService
 
 	mux sync.RWMutex
 
 	log *log.Helper
 }
 
-func NewConnUseCase(authService AuthServiceInterface, logger log.Logger) *ConnUseCase {
+func NewConnUseCase(authService AuthService, logger log.Logger) *ConnUseCase {
 	useCase := &ConnUseCase{
 		clients:     make(map[string]*websocket.Client),
 		scheduler:   gocron.NewScheduler(time.UTC),

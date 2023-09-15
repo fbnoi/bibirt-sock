@@ -7,31 +7,26 @@
 package main
 
 import (
-	"helloworld/internal/biz"
-	"helloworld/internal/conf"
-	"helloworld/internal/data"
-	"helloworld/internal/server"
-	"helloworld/internal/service"
-
+	"flynoob/bibirt-sock/internal/biz"
+	"flynoob/bibirt-sock/internal/conf"
+	"flynoob/bibirt-sock/internal/server"
+	"flynoob/bibirt-sock/internal/service"
 	"github.com/go-kratos/kratos/v2"
 	"github.com/go-kratos/kratos/v2/log"
+)
+
+import (
+	_ "go.uber.org/automaxprocs"
 )
 
 // Injectors from wire.go:
 
 // wireApp init kratos application.
-func wireApp(confServer *conf.Server, confData *conf.Data, logger log.Logger) (*kratos.App, func(), error) {
-	dataData, cleanup, err := data.NewData(confData, logger)
-	if err != nil {
-		return nil, nil, err
-	}
-	greeterRepo := data.NewGreeterRepo(dataData, logger)
-	greeterUsecase := biz.NewGreeterUsecase(greeterRepo, logger)
-	greeterService := service.NewGreeterService(greeterUsecase)
-	grpcServer := server.NewGRPCServer(confServer, greeterService, logger)
-	httpServer := server.NewHTTPServer(confServer, greeterService, logger)
-	app := newApp(logger, grpcServer, httpServer)
+func wireApp(confServer *conf.Server, logger log.Logger) (*kratos.App, func(), error) {
+	authService := service.NewAuthService(confServer)
+	connUseCase := biz.NewConnUseCase(authService, logger)
+	websocketServer := server.NewServer(connUseCase)
+	app := newApp(logger, websocketServer)
 	return app, func() {
-		cleanup()
 	}, nil
 }

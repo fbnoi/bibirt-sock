@@ -3,8 +3,6 @@ package kratos.api;
 
 option go_package = "flynoob/bibirt-sock/internal/conf;conf";
 
-import "google/protobuf/duration.proto";
-
 message Bootstrap {
   Server server = 1;
 }

@@ -3,6 +3,7 @@ package service
 import (
 	"context"
 	"flynoob/bibirt-sock/api"
+	"flynoob/bibirt-sock/internal/biz"
 	"flynoob/bibirt-sock/internal/conf"
 
 	"github.com/go-kratos/kratos/v2/metadata"
@@ -14,7 +15,7 @@ type AuthService struct {
 	client api.AuthClient
 }
 
-func NewAuthService(c *conf.Server) *AuthService {
+func NewAuthService(c *conf.Server) biz.AuthService {
 	md := metadata.New()
 	md.Add("x-md-global-app-id", c.Api.AppId)
 	md.Add("x-md-global-app-secret", c.Api.AppSecret)
@@ -33,7 +34,7 @@ func NewAuthService(c *conf.Server) *AuthService {
 	return &AuthService{client}
 }
 
-func (s AuthService) ConnUUID(tokStr string) (string, error) {
+func (s *AuthService) ConnUUID(tokStr string) (string, error) {
 	reply, err := s.client.ConnUUID(context.Background(), &api.ConnUUIDRequest{Token: tokStr})
 	if err != nil {
 		return "", err
