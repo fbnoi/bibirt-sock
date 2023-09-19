@@ -2,8 +2,6 @@ package websocket
 
 import (
 	"net/http"
-
-	gs "github.com/gorilla/websocket"
 )
 
 type ClientHandler interface {
@@ -12,7 +10,6 @@ type ClientHandler interface {
 
 type ConnHandler struct {
 	clientHandler ClientHandler
-	upgrader      gs.Upgrader
 }
 
 func NewConnHandler(handler ClientHandler) http.Handler {

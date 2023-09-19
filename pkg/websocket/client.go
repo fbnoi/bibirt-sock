@@ -46,17 +46,20 @@ func putAny(a *anypb.Any) {
 
 func NewClient(w http.ResponseWriter, r *http.Request) *Client {
 	return &Client{
-		Bus:    NewBus(),
-		conn:   nil,
-		Color:  Red,
-		status: Init,
-		Writer: w,
-		Req:    r,
+		Bus:     NewBus(),
+		conn:    nil,
+		Color:   Red,
+		status:  Init,
+		Writer:  w,
+		Req:     r,
+		session: make(map[string]any),
 	}
 }
 
 type Client struct {
 	Bus
+	sync.RWMutex
+
 	id      string
 	conn    *websocket.Conn
 	session map[string]any
@@ -65,14 +68,16 @@ type Client struct {
 	LastPingAt time.Time
 	Color      Color
 
-	sync.RWMutex
-
 	Writer http.ResponseWriter
 	Req    *http.Request
 }
 
-func (c *Client) Upgrade(upgrader websocket.Upgrader) (err error) {
+func (c *Client) Upgrade(upgrader *websocket.Upgrader) (err error) {
 	c.conn, err = upgrader.Upgrade(c.Writer, c.Req, nil)
+	if err == nil {
+		c.status = Connected
+		c.Color = Green
+	}
 
 	return
 }
@@ -83,6 +88,7 @@ func (c *Client) Listen() {
 			return
 		}
 		mt, message, err := c.conn.ReadMessage()
+		log.Println("read:", message)
 		if err != nil {
 			log.Println("read:", err)
 			break

@@ -17,9 +17,9 @@ type AuthService struct {
 
 func NewAuthService(c *conf.Server) biz.AuthService {
 	md := metadata.New()
-	md.Add("x-md-global-app-id", c.Api.AppId)
-	md.Add("x-md-global-app-secret", c.Api.AppSecret)
-	cc, err := grpc.Dial(
+	md.Add("x-md-global-appid", c.Api.AppId)
+	md.Add("x-md-global-appkey", c.Api.AppKey)
+	cc, err := grpc.DialInsecure(
 		context.Background(),
 		grpc.WithEndpoint(c.Api.Addr),
 		grpc.WithMiddleware(

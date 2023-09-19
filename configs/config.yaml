@@ -1,7 +1,11 @@
 server:
-  addr: 0.0.0.0:8000
+  addr: 0.0.0.0:5678
   api:
-    addr:
-    app_id:
-    app_secret:
-
+    addr: localhost:9000
+    appId: '1231231'
+    appKey: '12312312'
+  websocket:
+    handshakeTimeout: 3000
+    readBufferSize: 1024
+    writeBufferSize: 1024
+    enableCompression: false

@@ -11,8 +11,15 @@ message Server {
   message Api {
     string addr = 1;
     string appId = 2;
-    string appSecret = 3;
+    string appKey = 3;
+  }
+  message Websocket {
+    int64 handshakeTimeout = 1;
+    int64 readBufferSize = 2;
+    int64 writeBufferSize = 3;
+    bool enableCompression = 4;
   }
   string addr = 1;
   Api api = 2;
+  Websocket websocket = 3;
 }
