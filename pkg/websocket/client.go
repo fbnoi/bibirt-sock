@@ -88,12 +88,15 @@ func (c *Client) Listen() {
 			return
 		}
 		mt, message, err := c.conn.ReadMessage()
-		log.Println("read:", message)
 		if err != nil {
 			log.Println("read:", err)
 			break
 		}
-		go c.onReceive(mt, message)
+		go func() {
+			if err := c.onReceive(mt, message); err != nil {
+				log.Println("onReceive:", err)
+			}
+		}()
 	}
 }
 
@@ -170,8 +173,13 @@ func (c *Client) onReceive(mt int, message []byte) error {
 		if err := proto.Unmarshal(message, a); err != nil {
 			return err
 		}
+		log.Printf("onReceive: %s\n", a.MessageName())
 		m, err := GetMessage(a.TypeUrl)
 		if err != nil {
+			return err
+		}
+		if err := a.UnmarshalTo(m); err != nil {
+			log.Printf("onReceive: %s\n", err)
 			return err
 		}
 		c.Publish(m)

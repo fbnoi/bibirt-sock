@@ -1,5 +1,5 @@
 syntax = "proto3";
-package sock.message;
+package message;
 
 option go_package = "flynoob/bibirt-sock/internal/message;message";
 

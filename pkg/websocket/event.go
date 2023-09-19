@@ -3,12 +3,14 @@ package websocket
 import (
 	"github.com/pkg/errors"
 	"google.golang.org/protobuf/proto"
+	"google.golang.org/protobuf/types/known/anypb"
 )
 
 var messages = map[string]proto.Message{}
 
 func RegisterMessage(m proto.Message) {
-	typeUrl := string(m.ProtoReflect().Descriptor().FullName())
+	a, _ := anypb.New(m)
+	typeUrl := string(a.GetTypeUrl())
 	if _, ok := messages[typeUrl]; !ok {
 		messages[typeUrl] = m
 	}
