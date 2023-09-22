@@ -26,9 +26,9 @@ init:
 	go install github.com/google/wire/cmd/wire@latest
 	go install github.com/go-kratos/kratos/cmd/protoc-gen-go-errors/v2@latest
 
-.PHONY: config
+.PHONY: internal
 # generate internal proto
-config:
+internal:
 	protoc --proto_path=./internal \
 	       --proto_path=./third_party \
  	       --go_out=paths=source_relative:./internal \

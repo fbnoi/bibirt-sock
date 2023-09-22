@@ -82,6 +82,10 @@ func (handler *ClientHandler) closeClient(c *websocket.Client) {
 func (handler *ClientHandler) handleClientConnected(c *websocket.Client) {
 	handler.mux.Lock()
 	defer handler.mux.Unlock()
+	if dc, ok := handler.clients[c.ID()]; ok {
+		dc.Send(&message.ConnectionDuplicated{})
+		handler.closeClient(dc)
+	}
 
 	handler.clients[c.ID()] = c
 	c.Publish(&message.Connected{Id: c.ID()})
