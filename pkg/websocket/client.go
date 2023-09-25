@@ -173,7 +173,6 @@ func (c *Client) onReceive(mt int, message []byte) error {
 		if err := proto.Unmarshal(message, a); err != nil {
 			return err
 		}
-		log.Printf("onReceive: %s\n", a.MessageName())
 		m, err := GetMessage(a.TypeUrl)
 		if err != nil {
 			return err
