@@ -18,7 +18,8 @@ func (gm *GamemManager) StartGame(c *websocket.Client) {
 	if node := gm.list.FindAndRermoveOrJoin(c); node != nil {
 		room := NewRoom(node)
 		gm.rooms[room.Name] = room
-		room.bootstrap()
+		room.init()
+		room.start()
 	}
 }
 

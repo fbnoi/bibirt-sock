@@ -75,7 +75,7 @@ func (handler *ClientHandler) closeClient(c *websocket.Client) {
 	c.Close()
 	handler.mux.Lock()
 	defer handler.mux.Unlock()
-	c.Publish(&message.Disconnected{Id: c.ID()})
+	c.Publish(&message.Disconnected{Uuid: c.ID()})
 	delete(handler.clients, c.ID())
 }
 
@@ -88,5 +88,5 @@ func (handler *ClientHandler) handleClientConnected(c *websocket.Client) {
 	}
 
 	handler.clients[c.ID()] = c
-	c.Publish(&message.Connected{Id: c.ID()})
+	c.Publish(&message.Connected{Uuid: c.ID()})
 }

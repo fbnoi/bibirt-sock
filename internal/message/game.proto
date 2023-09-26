@@ -1,0 +1,27 @@
+syntax = "proto3";
+package message;
+
+option go_package = "flynoob/bibirt-sock/internal/message;message";
+
+message ConfirmedRequest {
+    string uuid = 1;
+}
+
+message ConfirmedReply {
+    string uuid = 1;
+}
+
+message GameStart {}
+message GameEnd {}
+
+message DropRequest {
+    string uuid = 1;
+    int64 x = 2;
+    int64 y = 3;
+}
+
+message DropReply {
+    string uuid = 1;
+    int64 x = 2;
+    int64 y = 3;
+}
