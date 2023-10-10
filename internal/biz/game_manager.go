@@ -8,14 +8,14 @@ import (
 
 const GAP = 50
 
-type GamemManager struct {
+type GameManager struct {
 	list *MatchList
 
 	rooms map[string]*Room
 }
 
-func (gm *GamemManager) StartGame(c *websocket.Client) {
-	if node := gm.list.FindAndRermoveOrJoin(c); node != nil {
+func (gm *GameManager) StartGame(c *websocket.Client) {
+	if node := gm.list.FindAndRemoveOrJoin(c); node != nil {
 		room := NewRoom(node)
 		gm.rooms[room.Name] = room
 		room.init()
@@ -30,7 +30,7 @@ type MatchList struct {
 	mux sync.Mutex
 }
 
-func (m *MatchList) FindAndRermoveOrJoin(c *websocket.Client) *MatchListNode {
+func (m *MatchList) FindAndRemoveOrJoin(c *websocket.Client) *MatchListNode {
 	m.mux.Lock()
 	defer m.mux.Unlock()
 	score, _ := c.Get("score")
